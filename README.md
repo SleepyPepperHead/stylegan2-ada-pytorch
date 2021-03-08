@@ -1,3 +1,14 @@
+## Changelog
+
+- save output images as JPG,
+- automatically resume from the latest `.pkl` file with the command-line argument `--resume=latest`,
+- automatically set the resume value of `kimg`,
+- automatically set the resume value of the augmentation strength,
+- allow to **manually** set the resume value of the augmentation strength,
+- add config `auto_norp` to replicate the `auto` config without EMA rampup,
+- allow to override mapping net depth with the command-line argument `--cfg_map`,
+- allow to enforce CIFAR-specific architecture tuning with the command-line argument `--cifar_tune`.
+
 ## StyleGAN2-ADA &mdash; Official PyTorch implementation
 
 ![Teaser image](./docs/stylegan2-ada-teaser-1024x252.png)
@@ -63,8 +74,7 @@ This repository is a faithful reimplementation of [StyleGAN2-ADA](https://github
 
 * Linux and Windows are supported, but we recommend Linux for performance and compatibility reasons.
 * 1&ndash;8 high-end NVIDIA GPUs with at least 12 GB of memory. We have done all testing and development using NVIDIA DGX-1 with 8 Tesla V100 GPUs.
-* 64-bit Python 3.7, PyTorch 1.7.1, and CUDA toolkit 11.0 or newer. Use CUDA toolkit 11.1 or later with RTX 3090.  See [https://pytorch.org/](https://pytorch.org/) for PyTorch install instructions.
-* Python libraries: `pip install click requests tqdm pyspng ninja imageio-ffmpeg==0.4.3`.  We use the Anaconda3 2020.11 distribution which installs most of these by default.
+* 64-bit Python 3.7, PyTorch 1.7.1, and CUDA toolkit 11.0 or newer. Use CUDA toolkit 11.1 or later with RTX 3090.
 * Docker users: use the [provided Dockerfile](./Dockerfile) to build an image with the required library dependencies.
 
 The code relies heavily on custom PyTorch extensions that are compiled on the fly using NVCC. On Windows, the compilation requires Microsoft Visual Studio. We recommend installing [Visual Studio Community Edition](https://visualstudio.microsoft.com/vs/) and adding it into `PATH` using `"C:\Program Files (x86)\Microsoft Visual Studio\<VERSION>\Community\VC\Auxiliary\Build\vcvars64.bat"`.

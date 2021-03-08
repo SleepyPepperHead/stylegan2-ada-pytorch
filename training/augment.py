@@ -354,17 +354,27 @@ class AugmentPipe(torch.nn.Module):
         # ------------------------------
 
         # Execute if the transform is not identity.
+
         if C is not I_4:
             images = images.reshape([batch_size, num_channels, height * width])
+            print(C.shape, I_4.shape, images.shape)
+            print('-------\n', C)
             if num_channels == 3:
+                print('33333')
+                print(C[:, :3, :3].shape, '@', images.shape, '+',  C[:, :3, 3:].shape)
                 images = C[:, :3, :3] @ images + C[:, :3, 3:]
             elif num_channels == 1:
                 C = C[:, :3, :].mean(dim=1, keepdims=True)
                 images = images * C[:, :, :3].sum(dim=2, keepdims=True) + C[:, :, 3:]
+            elif num_channels == 4:
+                print('444444')
+                print(C[:, :4, :3].shape, '@', images.shape, '+', C[:, :4, 3:].shape)
+                images = C[:, :4, :3] @ images + C[:, :4, 3:]
             else:
                 raise ValueError('Image must be RGB (3 channels) or L (1 channel)')
             images = images.reshape([batch_size, num_channels, height, width])
 
+        print('______________________________pass')
         # ----------------------
         # Image-space filtering.
         # ----------------------

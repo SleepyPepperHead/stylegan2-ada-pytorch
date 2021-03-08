@@ -23,6 +23,7 @@ from torch_utils.ops import grid_sample_gradfix
 
 import legacy
 from metrics import metric_main
+from training import misc as tmisc
 
 #----------------------------------------------------------------------------
 
@@ -77,12 +78,13 @@ def save_image_grid(img, fname, drange, grid_size):
     img = img.transpose(0, 3, 1, 4, 2)
     img = img.reshape(gh * H, gw * W, C)
 
-    assert C in [1, 3]
+    assert C in [1, 3, 4]
     if C == 1:
         PIL.Image.fromarray(img[:, :, 0], 'L').save(fname)
     if C == 3:
         PIL.Image.fromarray(img, 'RGB').save(fname)
-
+    if C == 4:
+        PIL.Image.fromarray(img, 'RGBA').save(fname)
 #----------------------------------------------------------------------------
 
 def training_loop(
@@ -98,7 +100,7 @@ def training_loop(
     metrics                 = [],       # Metrics to evaluate during training.
     random_seed             = 0,        # Global random seed.
     num_gpus                = 1,        # Number of GPUs participating in the training.
-    rank                    = 0,        # Rank of the current process in [0, num_gpus].
+    rank                    = 0,        # Rank of the current process in [0, num_gpus[.
     batch_size              = 4,        # Total batch size for one training iteration. Can be larger than batch_gpu * num_gpus.
     batch_gpu               = 4,        # Number of samples processed at a time by one GPU.
     ema_kimg                = 10,       # Half-life of the exponential moving average (EMA) of generator weights.
@@ -149,6 +151,20 @@ def training_loop(
     G_ema = copy.deepcopy(G).eval()
 
     # Resume from existing pickle.
+    if resume_pkl == 'latest':
+        out_dir = tmisc.get_parent_dir(run_dir)
+        resume_pkl = tmisc.locate_latest_pkl(out_dir)
+
+    resume_kimg = tmisc.parse_kimg_from_network_name(resume_pkl)
+    if resume_kimg > 0:
+        print(f'Resuming from kimg = {resume_kimg}')
+
+    if ada_target is not None and augment_p == 0:
+        # Overwrite augment_p only if the augmentation probability is not fixed by the user
+        augment_p = tmisc.parse_augment_p_from_log(resume_pkl)
+        if augment_p > 0:
+            print(f'Resuming with augment_p = {augment_p}')
+
     if (resume_pkl is not None) and (rank == 0):
         print(f'Resuming from "{resume_pkl}"')
         with dnnlib.util.open_url(resume_pkl) as f:
@@ -242,14 +258,14 @@ def training_loop(
     if rank == 0:
         print(f'Training for {total_kimg} kimg...')
         print()
-    cur_nimg = 0
+    cur_nimg = int(resume_kimg * 1000)
     cur_tick = 0
     tick_start_nimg = cur_nimg
     tick_start_time = time.time()
     maintenance_time = tick_start_time - start_time
     batch_idx = 0
     if progress_fn is not None:
-        progress_fn(0, total_kimg)
+        progress_fn(int(resume_kimg), total_kimg)
     while True:
 
         # Fetch training data.
